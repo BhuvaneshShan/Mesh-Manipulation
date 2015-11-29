@@ -20,20 +20,24 @@ void keys() {
   if (key==' ') {showHelpText=!showHelpText;};
   if (key=='H') {C.F.setToPoint(Cbox); C.D=Rbox*2; C.U.setTo(0,1,0); C.E.setToPoint(C.F); C.E.addVec(new vec(0,0,1)); C.pullE(); C.pose();};
   if (key=='X') {String S="mesh"+"-####.tif"; saveFrame(S);};   ;
-  
+  //Corner
   if (key == 'c') {C.setMark(); M.hitTriangle();}
   if (key == 'n') {M.cur_corner = M.n(M.cur_corner);}
   if (key == 'p') {M.cur_corner = M.p(M.cur_corner);}
   if (key == 's') {M.cur_corner = M.s(M.cur_corner);}
   if (key == 'u') {M.cur_corner = M.u(M.cur_corner);}
-  
+  //Triangle
   if (key=='t') {C.setMark(); M.hitTriangle(); 
                  int st = M.t(M.cur_corner); 
                  M.selectedTriangles[st]=!M.selectedTriangles[st];}
+  if (key=='e') {//expand selection
+                  M.expandSelectedTriangles();
+                }
   if (key=='D') {// Adv-1 i. Detail exaggeration
                   M.detailSelectedTriangles();
                 }
   if (key=='S'){//Adv-1 ii. Smooth
+                  //tuck and untuck
                 }
   
   if (key=='x') {C.setMark(); M.hitTriangle();  M.X[M.t(M.cur_corner)]=!M.X[M.t(M.cur_corner)]; };

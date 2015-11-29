@@ -210,6 +210,26 @@ class MeshMaker{
   
   boolean selectedTriangles[];
   boolean delTriangles[];
+  void expandSelectedTriangles(){
+    ArrayList<Integer> sts = new ArrayList<Integer>();
+    for(int i=0;i<nt;i++){
+      if(selectedTriangles[i]==true){
+        sts.add(i);
+      } 
+    }
+    for(int i=0;i<sts.size();i++){
+      int st = sts.get(i);
+      int cor1 = ct(st);
+      int cor2 = n(cor1);
+      int cor3 = n(cor2);
+      int sc1 = s(cor1);
+      int sc2 = s(cor2);
+      int sc3 = s(cor3);
+      selectedTriangles[t(sc1)] = true;
+      selectedTriangles[t(sc2)] = true;
+      selectedTriangles[t(sc3)] = true;
+    }
+  }
   void detailSelectedTriangles(){
     ArrayList<pt> newVert = new ArrayList<pt>();
     ArrayList<Integer> newVertIds = new ArrayList<Integer>();
@@ -228,22 +248,22 @@ class MeshMaker{
         int abid = isInList(ab,newVert, newVertIds);
         int bcid = isInList(bc,newVert, newVertIds);
         int caid = isInList(ca,newVert, newVertIds);
-        print("\n");
+        //print("\n");
         if(abid==-1){
           abid = addVertex(ab.x,ab.y,ab.z);
-          printPoint(ab);
+          //printPoint(ab);
           newVert.add(ab);
           newVertIds.add(abid);
         }
         if(bcid==-1){
           bcid = addVertex(bc.x,bc.y,bc.z);
-          printPoint(bc);
+          //printPoint(bc);
           newVert.add(bc);
           newVertIds.add(bcid);
         }
         if(caid==-1){
           caid = addVertex(ca.x,ca.y,ca.z);
-          printPoint(ca);
+          //printPoint(ca);
           newVert.add(ca);
           newVertIds.add(caid);
         }
@@ -266,7 +286,7 @@ class MeshMaker{
       if(almostEquals(newv.x,temp.x,0.01))
         if(almostEquals(newv.y,temp.y,0.01))
           if(almostEquals(newv.z,temp.z,0.01)){
-            print("Vertex same as "+newVertsIds.get(i));
+            //print("Vertex same as "+newVertsIds.get(i));
             return newVertsIds.get(i);
           }
     }
