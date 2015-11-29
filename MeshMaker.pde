@@ -28,10 +28,8 @@ class MeshMaker{
     updateStable(c,nc+2);
     nc += 3;
     X[nt] = true;
+    tNormals[nt] = triNormalFromPts(G[a],G[b],G[c]);
     nt++;
-    //correctStable(a);
-    //correctStable(b);
-    //correctStable(c);
     return nt-1;
   }
   void updateStable(int v, int c){
@@ -209,7 +207,6 @@ class MeshMaker{
   //ADVANCE 1 : REGIONAL SMOOTHING
   
   boolean selectedTriangles[];
-  boolean delTriangles[];
   void expandSelectedTriangles(){
     ArrayList<Integer> sts = new ArrayList<Integer>();
     for(int i=0;i<nt;i++){
@@ -271,12 +268,6 @@ class MeshMaker{
         addTriangle(abid,caid,bcid);
         addTriangle(b,abid,bcid);
         addTriangle(bcid,caid,c);
-        //correctSTable(a);
-        //correctSTable(b);
-        //correctSTable(c);
-        //correctSTable(abid);
-        //correctSTable(bcid);
-        //correctSTable(caid);
       }
     }
   }
@@ -297,6 +288,79 @@ class MeshMaker{
       return true;
      return false;
   }
+  
+  //ADV -2 
+  vec tNormals[];
+  vec sU;
+  pt sA;
+  pt sB;
+  vec sV;
+  int magnitude = 100;
+  boolean showSwirlValues = false;
+  ArrayList<Integer> sVertices;
+  vec Axis;
+  float angle;
+  pt fixedPt;
+  float timeUnit = 0;
+  void swirl(){
+    sVertices = new ArrayList<Integer>();
+    //Addition of all normals
+    sU = V(0,0,0);
+    for(int i=0;i<nt;i++){
+      if(selectedTriangles[i] == true){
+        sV = V(tNormals[i]);
+        sU.add(tNormals[i]); 
+        int cor1 = ct(i);
+        addToSVertices(v(cor1),v(n(cor1)),v(p(cor1)));
+      }
+    }
+    sU = U(sU);
+    sV = U(sV);
+    //sA = average of all the vertices
+    sA = getAverage(sVertices);
+    sB = T(sA,magnitude,sU);
+    calcValues();
+    for(float ti=0;ti<=1.0;ti=ti+0.2){
+      for(int i=0;i<sVertices.size();i++){
+        pt newvert = S(fixedPt,R(V(fixedPt,G[sVertices.get(i)]),angle*ti,Axis));
+        addVertex(newvert.x,newvert.y,newvert.z);
+      }
+    }
+  }
+  void calcValues(){
+    vec UxV = cross(sU,sV);
+    print("UxV:"+UxV.x+","+UxV.y+","+UxV.z);
+    vec BA = V(sB,sA);
+    print("BA:"+BA.x+","+BA.y+","+BA.z);
+    Axis = U(cross(BA,UxV));
+    print("Axis:"+Axis.x+","+Axis.y+","+Axis.z);
+    angle = angle(sU,sV);
+    print("ang:"+angle);
+    fixedPt = S(M(sA,sB),S(1.f/(2*tan(angle/2)),cross(Axis,BA)));
+    print("fixedPt:"+fixedPt.x+","+fixedPt.y+","+fixedPt.z);
+  }
+  pt getAverage(ArrayList<Integer> vids){
+    pt a = P(0,0,0);
+    for(int i=0;i<vids.size();i++){
+      a = M(a,G[vids.get(i)]);
+    }
+    return a;
+  }
+  void addToSVertices(int v1,int v2, int v3){
+    boolean v1found = false, v2found = false, v3found = false;
+    for(int i=0;i<sVertices.size();i++){
+      if(sVertices.get(i)==v1)  v1found = true;
+      else if(sVertices.get(i)==v2)  v2found = true;
+      else if(sVertices.get(i)==v3)  v3found = true;
+    }
+    if(v1found==false) sVertices.add(v1);
+    if(v2found==false) sVertices.add(v2);
+    if(v3found==false) sVertices.add(v3);
+  }
+  void translateSelectedTriangles(vec t){
+    
+  }
+  
   //NECESSARY FUNCTIONS
   void init(){
     loadMesh();
@@ -306,6 +370,40 @@ class MeshMaker{
   int negVrep(int a){
     return (-a-1);
   }
+  void reconstruct(){
+    int tTV[][] = new int[MAX_TRIANGLES][3];
+    int tTVind = 0;
+    for(int i=0;i<nt;i++){
+      if(X[i]){
+        int cor = ct(i);
+        tTV[tTVind][0] = v(cor);
+        tTV[tTVind][1] = v(n(cor));
+        tTV[tTVind][2] = v(p(cor));
+        tTVind++;
+      }
+    }
+    resetCTable();
+    resetTriNormals();
+    nt=0;
+    nc=0;
+    for(int i=0;i<tTVind;i++){
+      addTriangle(tTV[i][0],tTV[i][1],tTV[i][2]);  
+    }
+    //correctSTable();
+  }
+  void resetCTable(){
+    for(int i=0;i<nv;i++)
+      C[i] = -1;
+  }
+  void resetSTable(){
+    for(int i=0;i<nc;i++)
+      S[i] = -1;
+  }
+  void  resetTriNormals(){
+    for(int i=0;i<nt;i++)
+      tNormals[i] = V(0,0,0);
+  }
+  
   MeshMaker(){
     G = new pt[MAX_VERTICES];
     for(int i=0;i<MAX_VERTICES;i++){
@@ -328,9 +426,9 @@ class MeshMaker{
     for(int i=0;i<MAX_TRIANGLES;i++){
       selectedTriangles[i] = false;
     }
-    delTriangles = new boolean[MAX_TRIANGLES];
+    tNormals = new vec[MAX_TRIANGLES];
     for(int i=0;i<MAX_TRIANGLES;i++){
-      delTriangles[i] = false;
+      tNormals[i] = V(0,0,0);
     }
   }
   void generateMesh(int size){
@@ -351,7 +449,19 @@ class MeshMaker{
       }
     }
   }
+  void solve(){
+    if(showSwirlValues){
+      if(timeUnit>1.0)
+        timeUnit = 0;
+      else
+        timeUnit = timeUnit+0.01;
+      //pt ball = S(fixedPt,R(V(fixedPt,sA),angle*timeUnit,Axis));
+      //fill(orange);
+      //ball.show(3);
+    }
+  }
   void display(){
+    solve();
     //drawReferenceBalls();
     if(showVertices){
       noStroke();
@@ -367,6 +477,17 @@ class MeshMaker{
       noStroke();
       fill(red);
       dispCurCorner();
+    }
+    if(showSwirlValues){
+      noStroke();
+      fill(orange);
+      sA.show(2);
+      fill(metal);
+      sB.show(2);
+      stroke(blue);
+      strokeWeight(2);
+      showLineFrom(sA,sU,10);
+      showLineFrom(sB,sV,10);
     }
   }
   void dispCurCorner(){
@@ -490,7 +611,7 @@ class MeshMaker{
    float smallestDepth=10000000;
   boolean hit=false;
   for (int t=0; t<nt; t++) {
-    if (delTriangles[t]==false && rayHitTri(eye,mark,g(3*t),g(3*t+1),g(3*t+2))) {
+    if (rayHitTri(eye,mark,g(3*t),g(3*t+1),g(3*t+2))) {
       hit=true;
       float depth = rayDistTriPlane(eye,mark,g(3*t),g(3*t+1),g(3*t+2));
       if ((depth>0)&&(depth<smallestDepth)) {smallestDepth=depth;  cur_corner=3*t;};

@@ -153,6 +153,8 @@ class vec { float x,y,z;
   void back() {x= -x; y= -y; z= -z;};
   boolean coplanar (vec V, vec W) {return(abs(m(this,V,W))<0.0001);};
   boolean cw (vec U, vec V, vec W) {return(m(this,V,W)>0.0001);};
+  vec normalize() {float n=norm(); if (n>0.000001) {div(n);}; return this;};
+   
   } ;
   
   

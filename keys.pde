@@ -31,15 +31,25 @@ void keys() {
                  int st = M.t(M.cur_corner); 
                  M.selectedTriangles[st]=!M.selectedTriangles[st];}
   if (key=='e') {//expand selection
-                  M.expandSelectedTriangles();
+                 C.setMark(); M.hitTriangle(); 
+                 int st = M.t(M.cur_corner); 
+                 M.selectedTriangles[st]=true;
+                 M.expandSelectedTriangles();
                 }
+  //ADV-1
   if (key=='D') {// Adv-1 i. Detail exaggeration
                   M.detailSelectedTriangles();
+                  M.reconstruct(); //Enable correcSTable()
                 }
-  if (key=='S'){//Adv-1 ii. Smooth
-                  //tuck and untuck
-                }
+  if (key=='R'){M.reconstruct();}
   
+  //ADV-2
+  if (key=='S'){//Adv-2 swirl
+                M.showSwirlValues = !M.showSwirlValues;
+                if(M.showSwirlValues)
+                  M.swirl();
+                }
+  if (key=='M'){ M.magnitude++;if(M.showSwirlValues)M.swirl();}
   if (key=='x') {C.setMark(); M.hitTriangle();  M.X[M.t(M.cur_corner)]=!M.X[M.t(M.cur_corner)]; };
   
   if (keyCode==LEFT) {};
