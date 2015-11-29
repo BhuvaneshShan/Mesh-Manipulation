@@ -7,15 +7,15 @@ class MeshMaker{
   int MAX_CORNERS = 60000;
   int C[];
   int S[];
-  boolean X[];
+  boolean X[];  //Visibility of a triangle
   int nt=0, nv = 0, nc = 0; //triangles, vertices and corners count
-  pt G[];
+  pt G[];  //Geometry of a vertex
   
   boolean showTriangles = true, showVertices = true, showCorners = true, showEdges = false;
-  int cur_sample=0; 
-  int cur_corner=0;
+  int cur_sample=0; //Current mesh to show
+  int cur_corner=0; //Current corner to show
   
-  //Primary Functions
+  //PRIMARY FUNCTIONS
   int addVertex(float x, float y, float z){
     //print("In addVertex. nv:"+nv+" x,y,z:"+x+","+y+","+z);
     G[nv] = P(x,y,z);
@@ -206,6 +206,78 @@ class MeshMaker{
     else
       return true;
   }
+  //ADVANCE 1 : REGIONAL SMOOTHING
+  
+  boolean selectedTriangles[];
+  boolean delTriangles[];
+  void detailSelectedTriangles(){
+    ArrayList<pt> newVert = new ArrayList<pt>();
+    ArrayList<Integer> newVertIds = new ArrayList<Integer>();
+    for(int i=0;i<nt;i++){
+      if(selectedTriangles[i]==true){
+        selectedTriangles[i]=false;
+        int cor = ct(i);
+        int a = v(cor);
+        int b = v(n(cor));
+        int c = v(p(cor));
+        X[i] = false; //Make visible false
+        //delTriangles[i] = true; //Mark as deleted
+        pt ab = M(G[a],G[b]);
+        pt bc = M(G[b],G[c]);
+        pt ca = M(G[c],G[a]);
+        int abid = isInList(ab,newVert, newVertIds);
+        int bcid = isInList(bc,newVert, newVertIds);
+        int caid = isInList(ca,newVert, newVertIds);
+        print("\n");
+        if(abid==-1){
+          abid = addVertex(ab.x,ab.y,ab.z);
+          printPoint(ab);
+          newVert.add(ab);
+          newVertIds.add(abid);
+        }
+        if(bcid==-1){
+          bcid = addVertex(bc.x,bc.y,bc.z);
+          printPoint(bc);
+          newVert.add(bc);
+          newVertIds.add(bcid);
+        }
+        if(caid==-1){
+          caid = addVertex(ca.x,ca.y,ca.z);
+          printPoint(ca);
+          newVert.add(ca);
+          newVertIds.add(caid);
+        }
+        addTriangle(a,caid,abid);
+        addTriangle(abid,caid,bcid);
+        addTriangle(b,abid,bcid);
+        addTriangle(bcid,caid,c);
+        //correctSTable(a);
+        //correctSTable(b);
+        //correctSTable(c);
+        //correctSTable(abid);
+        //correctSTable(bcid);
+        //correctSTable(caid);
+      }
+    }
+  }
+  int isInList(pt newv,ArrayList<pt> newVerts, ArrayList<Integer> newVertsIds){
+    for(int i=0;i<newVerts.size();i++){
+      pt temp = newVerts.get(i);
+      if(almostEquals(newv.x,temp.x,0.01))
+        if(almostEquals(newv.y,temp.y,0.01))
+          if(almostEquals(newv.z,temp.z,0.01)){
+            print("Vertex same as "+newVertsIds.get(i));
+            return newVertsIds.get(i);
+          }
+    }
+    return -1;
+  }
+  boolean almostEquals(float a, float b, float range){
+    if(abs(a-b)<0.01)
+      return true;
+     return false;
+  }
+  //NECESSARY FUNCTIONS
   void init(){
     loadMesh();
     //generateMesh(5);
@@ -232,6 +304,14 @@ class MeshMaker{
       X[i] = false;
     }
     print("C,S,G,X initialized");
+    selectedTriangles = new boolean[MAX_TRIANGLES];
+    for(int i=0;i<MAX_TRIANGLES;i++){
+      selectedTriangles[i] = false;
+    }
+    delTriangles = new boolean[MAX_TRIANGLES];
+    for(int i=0;i<MAX_TRIANGLES;i++){
+      delTriangles[i] = false;
+    }
   }
   void generateMesh(int size){
     pt point = P(0,0,0);
@@ -273,8 +353,8 @@ class MeshMaker{
     int a = v(cur_corner);
     int b = v(n(cur_corner));
     int c = v(p(cur_corner));
-    pt ab = M(G[a],G[b]); pt ac = M(G[a],G[c]); pt bc = M(G[b],G[c]);
-    pt a1 = S(G[a],0.1,ab);
+    pt ab = S(G[a],0.2,G[b]); pt ac = S(G[a],0.2,G[c]); pt bc = M(G[b],G[c]);
+    pt a1 = S(G[a],0.1,bc);
     pt b1 = S(ac,0.1,G[b]);
     pt c1 = S(ab,0.1,G[c]);
     drawTriangle(a1,b1,c1);
@@ -286,7 +366,10 @@ class MeshMaker{
   }
   void dispTriangles(){
     for(int i=0;i<nt;i++){
-        fill(random(50,70),random(50,255),random(100,150));
+        if(selectedTriangles[i]==true)
+          fill(green);
+        else
+          fill(60,200,125);
         if(X[i]==true){
           int corner = ct(i);
           int a = v(corner);
@@ -362,6 +445,9 @@ class MeshMaker{
     sphere(20);
     popMatrix();
  }
+ void printPoint(pt p){
+   print(":"+p.x+","+p.y+","+p.z);
+ }
  void printSwingOfVertex(int v){
     int c = C[v];
     while(c>=0){
@@ -384,7 +470,8 @@ class MeshMaker{
    float smallestDepth=10000000;
   boolean hit=false;
   for (int t=0; t<nt; t++) {
-    if (rayHitTri(eye,mark,g(3*t),g(3*t+1),g(3*t+2))) {hit=true;
+    if (delTriangles[t]==false && rayHitTri(eye,mark,g(3*t),g(3*t+1),g(3*t+2))) {
+      hit=true;
       float depth = rayDistTriPlane(eye,mark,g(3*t),g(3*t+1),g(3*t+2));
       if ((depth>0)&&(depth<smallestDepth)) {smallestDepth=depth;  cur_corner=3*t;};
       }; 
