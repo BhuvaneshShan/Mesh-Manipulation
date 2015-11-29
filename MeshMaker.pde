@@ -308,36 +308,190 @@ class MeshMaker{
     sU = V(0,0,0);
     for(int i=0;i<nt;i++){
       if(selectedTriangles[i] == true){
-        sV = V(tNormals[i]);
         sU.add(tNormals[i]); 
         int cor1 = ct(i);
         addToSVertices(v(cor1),v(n(cor1)),v(p(cor1)));
       }
     }
-    sU = U(sU);
-    sV = U(sV);
     //sA = average of all the vertices
     sA = getAverage(sVertices);
+    sU = U(sU);
+    
+    sV = R(sU,PI/4,V(0,1,0));
+    sV = U(sV);
     sB = T(sA,magnitude,sU);
     calcValues();
+    //Choosing the border vertices alone
+    print("Getting border vertices");
+    ArrayList<Integer> sbVertices = new ArrayList<Integer>(); //sb - swirl border
+    ArrayList<Integer> siVertices = new ArrayList<Integer>();//si - swirl interior
+    for(int i=0;i<sVertices.size();i++){
+      if(isOuterVertexOfSelection(sVertices.get(i)))
+        sbVertices.add(sVertices.get(i));
+      else
+        siVertices.add(sVertices.get(i));
+    }
+    
+    //Reordering to walk along the border
+    sbVertices = reOrderBorderVertices(sbVertices);
+    
+    //Direction from center swirl path to every vertex
+    print("Dir to every vertex");
+    ArrayList<vec> sbVertDir = new ArrayList<vec>();
+    for(int i=0;i<sbVertices.size();i++){
+        sbVertDir.add(V(sA,G[sbVertices.get(i)]));
+    }
+    ArrayList<vec> siVertDir = new ArrayList<vec>();
+    for(int i=0;i<siVertices.size();i++){
+        siVertDir.add(V(sA,G[siVertices.get(i)]));
+    }
+    //Adding new vertices along the swirl
+    print("Adding new vertices");
+    ArrayList<Integer> sbVertSuccessor = new ArrayList<Integer>(sbVertices);
+    sbVertSuccessor.add(sbVertices.get(0));//Adding first element as last element
+    
+    ArrayList<Integer> siVertSuccessor = new ArrayList<Integer>(siVertices);
+    
+    int zeroPredecssor=sbVertices.get(0);
     for(float ti=0;ti<=1.0;ti=ti+0.2){
-      for(int i=0;i<sVertices.size();i++){
-        pt newvert = S(fixedPt,R(V(fixedPt,G[sVertices.get(i)]),angle*ti,Axis));
-        addVertex(newvert.x,newvert.y,newvert.z);
+      pt newpoint = S(fixedPt,R(V(fixedPt,sA),angle*ti,Axis));
+      float strength = pow(2.71,-ti);
+      //border vertices in the swirl selection
+      for(int i=0;i<sbVertDir.size();i++){
+        pt newvert = S(newpoint,S(strength,sbVertDir.get(i)));
+        int newvertid = addVertex(newvert.x,newvert.y,newvert.z);
+        int j = i+1;
+        if(j>=sbVertSuccessor.size())
+          j = 0;
+        addTriangle(newvertid,sbVertSuccessor.get(j),sbVertSuccessor.get(i));
+        j=i-1;
+        if(j>=0)
+          addTriangle(sbVertSuccessor.get(j),newvertid,sbVertSuccessor.get(i));
+        if(i==sbVertDir.size()-1){
+          //draw the last completing triangle for zero
+          addTriangle(newvertid,sbVertSuccessor.get(0),zeroPredecssor);
+        }
+        sbVertSuccessor.set(i,newvertid);
+      }
+      zeroPredecssor = sbVertSuccessor.get(0);
+      sbVertSuccessor.set(sbVertSuccessor.size()-1,sbVertSuccessor.get(0));
+      //sbVertSuccessor.add(sbVertSuccessor.get(0));
+      if(ti==1.0){
+        //Interior vertices at the end point of the swirl
+        for(int i=0;i<siVertDir.size();i++){
+          pt newvert = S(newpoint,S(strength,siVertDir.get(i)));
+          int ivertid = addVertex(newvert.x,newvert.y,newvert.z);
+          siVertSuccessor.set(i,ivertid);
+        }
       }
     }
+    print("\nDrawing upper cover");
+    //Draw upper cover
+    for(int i=0;i<nt;i++){
+      if(selectedTriangles[i]==true){
+        int c1 = ct(i);
+        int a = v(c1);
+        int b = v(n(c1));
+        int c = v(p(c1));
+        print("\nabc:"+a+","+b+","+c);
+        int aInd=0,bInd=0,cInd=0;
+        int aList =0, bList=0, cList =0; //if 1 = sb list 2 = si list
+        for(int j=0;j<sbVertices.size();j++){
+          if(sbVertices.get(j)==a){aInd = j;aList = 1;}
+          else if(sbVertices.get(j)==b){bInd = j;bList = 1;}
+          else if(sbVertices.get(j)==c){cInd = j;cList = 1;}
+        }
+        for(int j=0;j<siVertices.size();j++){
+          if(siVertices.get(j)==a){aInd = j;aList = 2;}
+          else if(siVertices.get(j)==b){bInd = j;bList = 2;}
+          else if(siVertices.get(j)==c){cInd = j;cList = 2;}
+        }
+        int aid=0,bid=0,cid=0;
+        if(aList==1){aid = sbVertSuccessor.get(aInd);}else{aid = siVertSuccessor.get(aInd);}
+        if(bList==1){bid = sbVertSuccessor.get(bInd);}else{bid = siVertSuccessor.get(bInd);}
+        if(cList==1){cid = sbVertSuccessor.get(cInd);}else{cid = siVertSuccessor.get(cInd);}
+        addTriangle(aid,bid,cid);
+        print("added triangle of id:"+i+" a,b,c id:"+aid+","+bid+","+cid);
+      }
+    }
+    
+    //make selected triangles invisible
+    switchOffSelectedTriangles();
+  }
+  
+  void switchOffSelectedTriangles(){
+    for(int i=0;i<nt;i++)
+      if(selectedTriangles[i]==true){
+        selectedTriangles[i] = false;
+        X[i]=false;
+      }
+  }
+  ArrayList<Integer> reOrderBorderVertices(ArrayList<Integer> sb){
+    ArrayList<Integer> newlist = new ArrayList<Integer>();
+    //newlist.add(sb.get(0));
+    int cor = C[sb.get(0)];
+    print("corn:"+cor);
+    while(selectedTriangles[t(cor)]==true){
+      cor = S[cor];
+     // if(cor<0){cor = C[-cor-1];}
+    }
+    print("corn1:"+cor);
+    while(sb.size()>0){
+      while(selectedTriangles[t(cor)]==false){
+        cor = S[cor];
+        if(cor<0) cor = C[-cor-1];
+      }
+      int pcor = p(cor);
+      int vid = v(pcor);
+      int index = isInVIDList(vid,sb);
+      if(index>=0){
+        newlist.add(vid);
+        sb.remove(index);
+        cor = pcor;
+      }else{
+        cor = S[cor];
+        if(cor<0) cor = C[-cor-1];
+      }
+    }
+    return newlist;
+  }
+  int isInVIDList(int vid,ArrayList<Integer> sb){
+    for(int i=0;i<sb.size();i++){
+      if(sb.get(i)==vid)
+        return i;
+    }
+    return -1;
+  }
+  int getFirstSelectedTriangleCorner(int cor){
+    do{
+    if(selectedTriangles[t(cor)]==true)
+      return cor;
+    cor = S[cor];
+    if(cor<=0){cor = C[-cor-1];}
+    }while(cor>=0);
+    return -1;
+  }
+  boolean isOuterVertexOfSelection(int a){
+    int swing = C[a];
+    while(swing>=0){
+      if(selectedTriangles[t(swing)]==false)
+        return true;
+      swing = S[swing];
+    }
+    return false;
   }
   void calcValues(){
     vec UxV = cross(sU,sV);
-    print("UxV:"+UxV.x+","+UxV.y+","+UxV.z);
+    print("\nUxV:"+UxV.x+","+UxV.y+","+UxV.z);
+    //UxV = U(UxV);
     vec BA = V(sB,sA);
-    print("BA:"+BA.x+","+BA.y+","+BA.z);
+    print("\nBA:"+BA.x+","+BA.y+","+BA.z);
     Axis = U(cross(BA,UxV));
-    print("Axis:"+Axis.x+","+Axis.y+","+Axis.z);
+    print("\nAxis:"+Axis.x+","+Axis.y+","+Axis.z);
     angle = angle(sU,sV);
-    print("ang:"+angle);
+    print("\nang:"+angle);
     fixedPt = S(M(sA,sB),S(1.f/(2*tan(angle/2)),cross(Axis,BA)));
-    print("fixedPt:"+fixedPt.x+","+fixedPt.y+","+fixedPt.z);
+    print("\nfixedPt:"+fixedPt.x+","+fixedPt.y+","+fixedPt.z);
   }
   pt getAverage(ArrayList<Integer> vids){
     pt a = P(0,0,0);
