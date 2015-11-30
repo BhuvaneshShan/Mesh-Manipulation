@@ -40,16 +40,29 @@ void keys() {
   if (key=='D') {// Adv-1 i. Detail exaggeration
                   M.detailSelectedTriangles();
                   M.reconstruct(); //Enable correcSTable()
+                  M.tuck(10);M.tuck(-7);
                 }
   if (key=='R'){M.reconstruct();}
   
   //ADV-2
   if (key=='S'){//Adv-2 swirl
                 M.showSwirlValues = !M.showSwirlValues;
-                if(M.showSwirlValues)
+                if(M.showSwirlValues){
                   M.swirl();
+                  //M.reconstruct();
+                }
                 }
   if (key=='M'){ M.magnitude++;if(M.showSwirlValues)M.swirl();}
+  
+  //ADV-3
+  if (key=='P'){M.pinch();}
+  if (key=='H'){M.pinchHeight +=10;}
+  /*if (key=='W'){M.showWave = !M.showWave; 
+                if(M.showWave==true) M.startWave();
+                else  M.endWave();
+              }
+  if (key=='A'){M.amplitude++;}*/
+                
   if (key=='x') {C.setMark(); M.hitTriangle();  M.X[M.t(M.cur_corner)]=!M.X[M.t(M.cur_corner)]; };
   
   if (keyCode==LEFT) {};
