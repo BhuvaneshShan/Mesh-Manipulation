@@ -4,22 +4,30 @@ void showHelp() {
   text("B",0,0); translate(0,20);
   translate(0,20);
   text("Click in this window. Press SPACE to show/hide this help text  ",0,0); translate(0,20);
-  text("CORNER OPS: c - pick corner of selected traingle, n - next, p - prev, s - swing, u - unswing.",0,0); translate(0,20);
-  text("TRIANGLE OPS: t - select triangle. 'f' flip edge, 'm' merge vertices', 'k' hide/rveal triangle  ",0,0); translate(0,20);
-  text("MESH OPS: 'R' refine, 'S' smooth, 'M' mnimize, 'F' fill holes  ",0,0); translate(0,20);
-  text("EDGEBREAKER: 'i' init, 'a' advance, 'b' compress, 'B' show colors   ",0,0); translate(0,20);
-  text("DISTANCE: 'D' show, 'I' isolation, 'P' path, 'd' distance, ',' smaller, '.' larger, '0' zero   ",0,0); translate(0,20);
-  text("FILES: 'g' next file. 'G' read from file, 'A' archive.",0,0); translate(0,20);
-  text("VIEW: 'z' zoom, 'H home, 'j' jump, 'J' jumping,   ",0,0); translate(0,20);
-  text("DISPLAY: 'E' edges, 'V' vertices, 'N' normals, ",0,0); translate(0,20);
+  text("CORNER OPS: c - pick corner of selected traingle, n - next, p - prev, s - swing, u - unswing",0,0); translate(0,20);
+  text("TRIANGLE OPS: x-hide/reveal triangle, t - select triangle, e- expand selection, d-deselect all",0,0); translate(0,20);
+  text("ADV1 SUBSURFACE SMOOTHING: D (Shift+d) - to refine and smooth a selected region of triangles",0,0); translate(0,20);
+  text("ADV2 SWIRL A REGION: S - To swirl selected region, M - increase magnitude, R - reconstruct mesh",0,0); translate(0,20);
+  text("ADV3 WALL: Q - to select triangles by dragging mouse, W - to create a wall",0,0); translate(0,20);
+  text("ADV4 TENT CLOTH EFFECT: E - to pull up a selected corner and decay the surrounding vertices (Tent cloth effect)",0,0); translate(0,20);
+  text("VIEW: 'z' zoom ",0,0); translate(0,20);
+  text("FILE: keys '6','7','8','9','0','-' and '=' to load diff models, '+' to generate flat plane",0,0); translate(0,20);
   text("   ",0,0); translate(0,20);
-  text("If running local: 'W' to save points and 'X' to save a picture (DO NOT USE IN WEB BROWSER!).",0,0); translate(0,20);
+  text("   ",0,0); translate(0,20);
   popMatrix(); noFill();
 }
 void keys() {
   if (key==' ') {showHelpText=!showHelpText;};
   if (key=='H') {C.F.setToPoint(Cbox); C.D=Rbox*2; C.U.setTo(0,1,0); C.E.setToPoint(C.F); C.E.addVec(new vec(0,0,1)); C.pullE(); C.pose();};
   if (key=='X') {String S="mesh"+"-####.tif"; saveFrame(S);};   ;
+  if (key=='6') {M.cur_sample=0;M.reinit(0);initView(M);}
+  if (key=='7') {M.cur_sample=1;M.reinit(0);initView(M);}
+  if (key=='8') {M.cur_sample=2;M.reinit(0);initView(M);}
+  if (key=='9') {M.cur_sample=3;M.reinit(0);initView(M);}
+  if (key=='0') {M.cur_sample=4;M.reinit(0);initView(M);}
+  //if (key=='-') {M.cur_sample=5;M.reinit(0);initView(M);}
+  if (key=='=') {M.cur_sample=6;M.reinit(0);initView(M);}
+  if (key=='+') {M.cur_sample=0;M.reinit(1);initView(M);}
   //Corner
   if (key == 'c') {C.setMark(); M.hitTriangle();}
   if (key == 'n') {M.cur_corner = M.n(M.cur_corner);}
@@ -27,6 +35,7 @@ void keys() {
   if (key == 's') {M.cur_corner = M.s(M.cur_corner);}
   if (key == 'u') {M.cur_corner = M.u(M.cur_corner);}
   //Triangle
+  if (key=='x') {C.setMark(); M.hitTriangle();  M.X[M.t(M.cur_corner)]=!M.X[M.t(M.cur_corner)]; };
   if (key=='t') {C.setMark(); M.hitTriangle(); 
                  int st = M.t(M.cur_corner); 
                  M.selectedTriangles[st]=!M.selectedTriangles[st];}
@@ -36,30 +45,35 @@ void keys() {
                  M.selectedTriangles[st]=true;
                  M.expandSelectedTriangles();
                 }
+  if (key=='d'){M.resetSelTriangles();}
   //ADV-1
-  if (key=='D') {// Adv-1 i. Detail exaggeration
+  if (key=='D') {// Adv-1 i. Subsurface smoothing
                   M.detailSelectedTriangles();
                   M.reconstruct(); //Enable correcSTable()
-                  M.tuck(10);M.tuck(-7);
+                  M.tuck(10);M.tuck(-7);M.reconstruct();
                 }
-  if (key=='R'){M.reconstruct();}
-  
   //ADV-2
   if (key=='S'){//Adv-2 swirl
-                M.showSwirlValues = !M.showSwirlValues;
-                if(M.showSwirlValues){
+                //M.showSwirlValues = !M.showSwirlValues;
+                //if(M.showSwirlValues){
                   M.swirl();
                   //M.reconstruct();
+                //}
                 }
-                }
-  if (key=='M'){ M.magnitude++;if(M.showSwirlValues)M.swirl();}
+  if (key=='R'){M.reconstruct();}
+  if (key=='M'){ M.magnitude+=30;}//if(M.showSwirlValues)}
   
   //ADV-3 wall
-  if (key=='Q'){M.curveSelection = !M.curveSelection; print("\nKey Q = "+M.curveSelection);}
+  if (key=='Q'){M.curveSelection = true;}//!M.curveSelection; print("\nKey Q = "+M.curveSelection);}
   if (key=='W'){M.constructWall();M.reconstruct();}
   
   //ADV-4 elevation
-  if (key=='E'){M.elevate();}
+  if (key=='E'){//M.elevateMode = !M.elevateMode; print("key E:"+M.elevateMode);
+                //if(M.elevateMode==true){ 
+                  M.elevate();
+                M.reconstruct();//}
+              }
+  //if (key=='H'){if(M.elevateMode==true){M.eleHeight+=10; M.elevate();}}
   /*
   if (key=='P'){M.pinch();}
   if (key=='H'){M.pinchHeight +=10;}*/
@@ -69,8 +83,6 @@ void keys() {
               }
   if (key=='A'){M.amplitude++;}*/
              
-  if (key=='x') {C.setMark(); M.hitTriangle();  M.X[M.t(M.cur_corner)]=!M.X[M.t(M.cur_corner)]; };
-  
   if (keyCode==LEFT) {};
   if (keyCode==RIGHT) {};
   if (keyCode==DOWN) {};

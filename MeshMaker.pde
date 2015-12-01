@@ -271,10 +271,12 @@ class MeshMaker{
       selectedTriangles[t(sc3)] = true;
     }
   }
+  ArrayList<Integer> vertRefCount ;
   void detailSelectedTriangles(){
     selectedVertices = new boolean[MAX_VERTICES];
     ArrayList<pt> newVert = new ArrayList<pt>();
     ArrayList<Integer> newVertIds = new ArrayList<Integer>();
+    vertRefCount = new ArrayList<Integer>();
     for(int i=0;i<nt;i++){
       if(selectedTriangles[i]==true){
         selectedTriangles[i]=false;
@@ -296,18 +298,21 @@ class MeshMaker{
           //printPoint(ab);
           newVert.add(ab);
           newVertIds.add(abid);
+          vertRefCount.add(1);
         }
         if(bcid==-1){
           bcid = addVertex(bc.x,bc.y,bc.z);
           //printPoint(bc);
           newVert.add(bc);
           newVertIds.add(bcid);
+          vertRefCount.add(1);
         }
         if(caid==-1){
           caid = addVertex(ca.x,ca.y,ca.z);
           //printPoint(ca);
           newVert.add(ca);
           newVertIds.add(caid);
+          vertRefCount.add(1);
         }
         addTriangle(a,abid,caid);
         addTriangle(caid,abid,bcid);
@@ -315,6 +320,11 @@ class MeshMaker{
         addTriangle(caid,bcid,c);
         selectedVertices[a] = true;selectedVertices[b] = true;selectedVertices[c] = true;
         selectedVertices[abid] = true;selectedVertices[caid] = true;selectedVertices[bcid] = true;
+      }
+    }
+    for(int i=0;i<vertRefCount.size();i++){
+      if(vertRefCount.get(i)==1){
+        selectedVertices[newVertIds.get(i)]=false;
       }
     }
   }
@@ -325,6 +335,7 @@ class MeshMaker{
         if(almostEquals(newv.y,temp.y,0.01))
           if(almostEquals(newv.z,temp.z,0.01)){
             //print("Vertex same as "+newVertsIds.get(i));
+            vertRefCount.set(i,vertRefCount.get(i)+1);
             return newVertsIds.get(i);
           }
     }
@@ -488,7 +499,7 @@ class MeshMaker{
         cor = S[cor];
         if(cor<0) cor = C[-cor-1];
       }
-      int pcor = p(cor);
+      int pcor = n(cor);
       int vid = v(pcor);
       int index = isInVIDList(vid,sb);
       if(index>=0){
@@ -643,19 +654,23 @@ class MeshMaker{
       wallvlist.add(a);
   }
   
-  //ADV-4 pinch
-  
+  //ADV-4 TENT CLOTH EFFECT / pinch
+  boolean elevateMode = false;
   float eleHeight = 100;
   float factor = 1.5;
   vec vNormals[];
-  boolean markedTri[];
   int vDist[];
+  pt tmpG[];
   void elevate(){
+    tmpG = new pt[nv];
+    for(int i=0;i<nv;i++)
+      tmpG[i] = P(G[i]);
     int vDist[] = new int[nv];
     for(int i=0;i<nv;i++){
       vDist[i] = -1;
     }
     int selVert = v(cur_corner);
+    int firstSelVert = selVert;
     vDist[selVert] = 0;
     ArrayList<Integer> sts = new ArrayList<Integer>();
     sts.add(selVert);
@@ -671,11 +686,13 @@ class MeshMaker{
       }
       sts.remove(0);
     }
+    vec selNorm = U(vNormals[firstSelVert]);
     for(int i=0;i<nv;i++){
-      G[i].setTo(S(G[i],S(eleHeight*pow(factor,-vDist[i]),U(vNormals[i]))));
+      G[i].setTo(S(G[i],S(eleHeight*pow(factor,-vDist[i]),selNorm)));
     }
   }
-  
+ 
+  /*
   int triDist(int src_cor, int dstn_cor){
     if(src_cor==dstn_cor || src_cor==n(dstn_cor) || src_cor==p(dstn_cor) )
       return 0;
@@ -696,7 +713,7 @@ class MeshMaker{
       }
       return minimum(p,q,r);
     }
-  }
+  }*/
   int minimum(int p, int q, int r){
     if(p<q && p<r)return p;
     else if(q<r)return q;
@@ -788,6 +805,14 @@ class MeshMaker{
     correctSTable();
     //printSTable();
   }
+  void reinit(int num){
+    resetAll();
+    if(num==1)
+      generateMesh(15);
+    else
+      loadMesh();
+    correctSTable();
+  }
   int negVrep(int a){
     return (-a-1);
   }
@@ -836,6 +861,9 @@ class MeshMaker{
   }
   
   MeshMaker(){
+    resetAll();
+  }
+  void resetAll(){
     G = new pt[MAX_VERTICES];
     for(int i=0;i<MAX_VERTICES;i++){
       G[i] = P(0,0,0);
@@ -865,6 +893,9 @@ class MeshMaker{
     for(int i=0;i<MAX_VERTICES;i++){
       vNormals[i] = V(0,0,0);
     }
+    nt=0; nv = 0; nc = 0; //triangles, vertices and corners count
+    showTriangles = true; showVertices = true; showCorners = true; showEdges = false;
+    cur_corner=0; 
   }
   void generateMesh(int w){
     print("\nAdding vertices");

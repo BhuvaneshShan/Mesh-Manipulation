@@ -28,7 +28,7 @@ void draw(){
 //***      KEY ACTIONS (details in keys tab)
 void keyPressed() { keys(); };
 void mousePressed() {C.anchor(); C.pose();/* prevx=mouseX;prevy=mouseY;*/ };   // record where the cursor was when the mouse was pressed
-void mouseReleased() {C.anchor(); C.pose(); };  // reset the view if any key was pressed when mouse was released
+void mouseReleased() {C.anchor(); C.pose(); M.curveSelection=false;};  // reset the view if any key was pressed when mouse was released
 void mouseDragged(){ if(M.curveSelection==true){ 
                         //print("\nhitting "+mouseX+","+mouseY);
                         C.setMark();
@@ -42,3 +42,7 @@ void mouseDragged(){ if(M.curveSelection==true){
                         prevx = x; prevy = y;*/
                       }
                     }
+                    /*
+void mouseMoved(){
+  if(M.elevateMode==true) M.elevate(py-mouseY);
+}*/
