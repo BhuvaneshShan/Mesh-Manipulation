@@ -563,25 +563,66 @@ class MeshMaker{
   //ADV-3 WALL
   boolean curveSelection = false;
   ArrayList<Integer> wallvlist;
+  ArrayList<Integer> newWallv;
   float wallHeight = 100;
   void constructWall(){
      wallvlist = new ArrayList<Integer>();
+     newWallv = new ArrayList<Integer>();
     vec commTNormal = V(0,0,0);
     for(int i=0;i<nt;i++){
       if(selectedTriangles[i]==true){
         commTNormal.add(U(tNormals[i]));
-        int cor = ct(i);
-        addToWallVList(v(cor));
-        addToWallVList(v(n(cor)));
-        addToWallVList(v(p(cor)));
       }
     }
     commTNormal = U(commTNormal);
-    for(int i=0;i<wallvlist.size();i++){
-      int j = wallvlist.get(i);
-      G[j].setTo(S(G[j],S(wallHeight,commTNormal)));
+    for(int i=0;i<nt;i++){
+      if(selectedTriangles[i]==true){
+        int ac = ct(i); int bc = n(ac); int cc = p(ac);
+        int a = v(ac); int b = v(bc); int c = v(cc);
+        int na = isInWallVList(a);int nb = isInWallVList(b);int nc = isInWallVList(c);
+        if(na==-1){
+          pt npt = S(G[a],S(wallHeight,commTNormal));
+          na = addVertex(npt.x,npt.y,npt.z);
+          wallvlist.add(a);
+          newWallv.add(na);
+        }
+        if(nb==-1){
+          pt npt = S(G[b],S(wallHeight,commTNormal));
+          nb = addVertex(npt.x,npt.y,npt.z);
+          wallvlist.add(b);
+          newWallv.add(nb);
+        }
+        if(nc==-1){
+          pt npt = S(G[c],S(wallHeight,commTNormal));
+          nc = addVertex(npt.x,npt.y,npt.z);
+          wallvlist.add(c);
+          newWallv.add(nc);
+        }
+        addTriangle(na,nb,nc);
+        if(isWallBorder(ac,cc)){addQuad(a,na,nc,c);}
+        if(isWallBorder(ac,bc)){addQuad(a,na,nb,b);}
+        if(isWallBorder(bc,cc)){addQuad(b,nb,nc,c);}
+        X[i]=false;
+      }
     }
     resetSelTriangles();
+  }
+  boolean isWallBorder(int ac, int bc){
+    if((selectedTriangles[t(s(ac))]==false && selectedTriangles[t(u(bc))]==false) || (selectedTriangles[t(u(ac))]==false && selectedTriangles[t(s(bc))]==false))
+      return true;
+    return false;
+  }
+  void addQuad(int a, int b, int c, int d){
+    addTriangle(a,b,c);
+    addTriangle(a,c,d);
+  }
+  int isInWallVList(int a){
+    for(int i=0;i<wallvlist.size();i++){
+      if(wallvlist.get(i)==a){
+        return newWallv.get(i);
+      }
+    }
+    return -1;
   }
   void addToWallVList(int a){
     boolean found = false;
