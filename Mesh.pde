@@ -27,7 +27,7 @@ void draw(){
 
 //***      KEY ACTIONS (details in keys tab)
 void keyPressed() { keys(); };
-void mousePressed() {C.anchor(); C.pose();  };   // record where the cursor was when the mouse was pressed
+void mousePressed() {C.anchor(); C.pose();/* prevx=mouseX;prevy=mouseY;*/ };   // record where the cursor was when the mouse was pressed
 void mouseReleased() {C.anchor(); C.pose(); };  // reset the view if any key was pressed when mouse was released
 void mouseDragged(){ if(M.curveSelection==true){ 
                         //print("\nhitting "+mouseX+","+mouseY);
@@ -35,5 +35,10 @@ void mouseDragged(){ if(M.curveSelection==true){
                         M.hitTriangle();
                         //print("curcor:"+M.cur_corner);
                         M.selectedTriangles[M.t(M.cur_corner)]=true;
+                        /*int x = mouseX;int y =mouseY;
+                        stroke(black);
+                        strokeWeight(5);
+                        line(prevx,prevy,M.Cbox.z,x,y,M.Cbox.z);
+                        prevx = x; prevy = y;*/
                       }
                     }

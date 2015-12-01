@@ -608,8 +608,15 @@ class MeshMaker{
     resetSelTriangles();
   }
   boolean isWallBorder(int ac, int bc){
-    if((selectedTriangles[t(s(ac))]==false && selectedTriangles[t(u(bc))]==false) || (selectedTriangles[t(u(ac))]==false && selectedTriangles[t(s(bc))]==false))
-      return true;
+    if((selectedTriangles[t(s(ac))]==false && selectedTriangles[t(u(bc))]==false) || (selectedTriangles[t(u(ac))]==false && selectedTriangles[t(s(bc))]==false)){
+    //if(selectedTriangles[t(u(ac))]==false && selectedTriangles[t(s(bc))]==false)
+    //if(selectedTriangles[t(s(ac))]==false){
+    //  if(selectedTriangles[t(u(bc))]==false)
+    //    return true;
+    //}else if(selectedTriangles[t(u(ac))]==false){
+    //  if(selectedTriangles[t(s(bc))]==false)
+        return true;
+    }
     return false;
   }
   void addQuad(int a, int b, int c, int d){
@@ -636,9 +643,66 @@ class MeshMaker{
       wallvlist.add(a);
   }
   
-  float pinchHeight = 200;
-  float lamda = 0.01;
+  //ADV-4 pinch
+  
+  float eleHeight = 100;
+  float factor = 1.5;
   vec vNormals[];
+  boolean markedTri[];
+  int vDist[];
+  void elevate(){
+    int vDist[] = new int[nv];
+    for(int i=0;i<nv;i++){
+      vDist[i] = -1;
+    }
+    int selVert = v(cur_corner);
+    vDist[selVert] = 0;
+    ArrayList<Integer> sts = new ArrayList<Integer>();
+    sts.add(selVert);
+    while(sts.size()>0){  
+      selVert = sts.get(0);
+      int cor = C[selVert];
+      while(cor>=0){
+        int pcor = p(cor); int ncor = n(cor);
+        int pcorvert = v(pcor); int ncorvert = v(ncor);
+        if(vDist[pcorvert]==-1){ vDist[pcorvert] = vDist[selVert]+1; sts.add(pcorvert);}
+        if(vDist[ncorvert]==-1){ vDist[ncorvert] = vDist[selVert]+1; sts.add(ncorvert);}
+        cor = S[cor];
+      }
+      sts.remove(0);
+    }
+    for(int i=0;i<nv;i++){
+      G[i].setTo(S(G[i],S(eleHeight*pow(factor,-vDist[i]),U(vNormals[i]))));
+    }
+  }
+  
+  int triDist(int src_cor, int dstn_cor){
+    if(src_cor==dstn_cor || src_cor==n(dstn_cor) || src_cor==p(dstn_cor) )
+      return 0;
+    else{
+      int c1 = src_cor;int c2 = n(c1);int c3 = n(c2);
+      int p=999999,q=999999,r=999999;
+      if(markedTri[t(s(c1))]==false){
+        p = 1+triDist(s(c1),dstn_cor);
+        markedTri[t(s(c1))] = true;
+      }
+      if(markedTri[t(s(c2))]==false){
+        q = 1+triDist(s(c2),dstn_cor);
+        markedTri[t(s(c2))] = true;
+      }
+      if(markedTri[t(s(c3))]==false){
+        r = 1+triDist(s(c3),dstn_cor);
+        markedTri[t(s(c3))] = true;
+      }
+      return minimum(p,q,r);
+    }
+  }
+  int minimum(int p, int q, int r){
+    if(p<q && p<r)return p;
+    else if(q<r)return q;
+    else return r;
+  }
+  /*
   void pinch(){
     int selVert = v(cur_corner);
     vec vertNormal = U(vNormals[selVert]);
@@ -661,17 +725,18 @@ class MeshMaker{
           G[b].setTo(S(G[b],S(pow(2.71,-lamda*bd)*ph,U(vNormals[b]))));
         if(!isInList(c,vv))
           G[c].setTo(S(G[c],S(pow(2.71,-lamda*cd)*ph,U(vNormals[c]))));
-        /*if(!isInList(a,vv))
+        if(!isInList(a,vv))
           G[a].setTo(S(G[a],S(ph,U(vNormals[a]))));   //decay function  e = 2.71
         if(!isInList(b,vv))
           G[b].setTo(S(G[b],S(ph,U(vNormals[b]))));
         if(!isInList(c,vv))
           G[c].setTo(S(G[c],S(ph,U(vNormals[c]))));
-        */
+        
         vv.add(a);vv.add(b);vv.add(c);
       }
     }
   }
+  */
   boolean isInList(int a, ArrayList<Integer> vv){
     for(int i=0;i<vv.size();i++)
       if(vv.get(i)==a)

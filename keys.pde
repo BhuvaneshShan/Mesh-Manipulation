@@ -57,6 +57,9 @@ void keys() {
   //ADV-3 wall
   if (key=='Q'){M.curveSelection = !M.curveSelection; print("\nKey Q = "+M.curveSelection);}
   if (key=='W'){M.constructWall();M.reconstruct();}
+  
+  //ADV-4 elevation
+  if (key=='E'){M.elevate();}
   /*
   if (key=='P'){M.pinch();}
   if (key=='H'){M.pinchHeight +=10;}*/
