@@ -54,15 +54,20 @@ void keys() {
                 }
   if (key=='M'){ M.magnitude++;if(M.showSwirlValues)M.swirl();}
   
-  //ADV-3
+  //ADV-3 wall
+  if (key=='Q'){M.curveSelection = !M.curveSelection; print("\nKey Q = "+M.curveSelection);}
+  if (key=='W'){M.constructWall();
+                
+              }
+  /*
   if (key=='P'){M.pinch();}
-  if (key=='H'){M.pinchHeight +=10;}
+  if (key=='H'){M.pinchHeight +=10;}*/
   /*if (key=='W'){M.showWave = !M.showWave; 
                 if(M.showWave==true) M.startWave();
                 else  M.endWave();
               }
   if (key=='A'){M.amplitude++;}*/
-                
+             
   if (key=='x') {C.setMark(); M.hitTriangle();  M.X[M.t(M.cur_corner)]=!M.X[M.t(M.cur_corner)]; };
   
   if (keyCode==LEFT) {};

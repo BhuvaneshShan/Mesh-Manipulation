@@ -560,7 +560,41 @@ class MeshMaker{
   }
   
   
-  //ADV-3 PINCH
+  //ADV-3 WALL
+  boolean curveSelection = false;
+  ArrayList<Integer> wallvlist;
+  float wallHeight = 100;
+  void constructWall(){
+     wallvlist = new ArrayList<Integer>();
+    vec commTNormal = V(0,0,0);
+    for(int i=0;i<nt;i++){
+      if(selectedTriangles[i]==true){
+        commTNormal.add(U(tNormals[i]));
+        int cor = ct(i);
+        addToWallVList(v(cor));
+        addToWallVList(v(n(cor)));
+        addToWallVList(v(p(cor)));
+      }
+    }
+    commTNormal = U(commTNormal);
+    for(int i=0;i<wallvlist.size();i++){
+      int j = wallvlist.get(i);
+      G[j].setTo(S(G[j],S(wallHeight,commTNormal)));
+    }
+    resetSelTriangles();
+  }
+  void addToWallVList(int a){
+    boolean found = false;
+    for(int i=0;i<wallvlist.size();i++){
+      if(wallvlist.get(i)==a){
+        found = true;
+        break;
+      }
+    }
+    if(found==false)
+      wallvlist.add(a);
+  }
+  
   float pinchHeight = 200;
   float lamda = 0.01;
   vec vNormals[];
@@ -638,10 +672,13 @@ class MeshMaker{
     }
   }
   
+  
+  
+  
   //NECESSARY FUNCTIONS
   void init(){
-    loadMesh();
-    //generateMesh(15);
+    //loadMesh();
+    generateMesh(15);
     correctSTable();
     //printSTable();
   }
@@ -685,6 +722,11 @@ class MeshMaker{
   void resetVerNormals(){
      for(int i=0;i<nv;i++)
       vNormals[i] = V(0,0,0);
+  }
+  void resetSelTriangles(){
+    for(int i=0;i<nt;i++){
+      selectedTriangles[i]=false;
+    }
   }
   
   MeshMaker(){
